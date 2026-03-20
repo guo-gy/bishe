@@ -22,6 +22,7 @@ TORCH_INDEX_URL="${TORCH_INDEX_URL:-https://download.pytorch.org/whl/cu121}"
 TORCH_PACKAGES="${TORCH_PACKAGES:-torch==2.1.2 torchvision==0.16.2 torchaudio==2.1.2}"
 BASE_PORT=29600
 WANDB_MODE="${WANDB_MODE:-disabled}"
+KEEP_LAST_MODEL="${KEEP_LAST_MODEL:-0}"
 RUN_SETUP=1
 RUN_EXPERIMENTS=1
 RUN_TEST=0
@@ -70,6 +71,7 @@ Training options:
   --workers-val N
   --base-port PORT
   --wandb-mode online|offline|disabled
+  --keep-last-model             Preserve last_model.pth after each job
   --no-auto-scale-lr
   --continue-on-error
   --no-download-clip
@@ -163,6 +165,10 @@ parse_args() {
       --wandb-mode)
         WANDB_MODE="$2"
         shift 2
+        ;;
+      --keep-last-model)
+        KEEP_LAST_MODEL=1
+        shift
         ;;
       --run-test)
         RUN_TEST=1
@@ -439,12 +445,19 @@ run_variant_job() {
   (
     set -euo pipefail
     cd "$ROOT_DIR"
+    exp_dir="$(to_abs_path "$OUTPUT_ROOT")/${VARIANT_NAME}"
+    best_ckpt="${exp_dir}/best_model.pth"
+    last_ckpt="${exp_dir}/last_model.pth"
     export CUDA_VISIBLE_DEVICES="$gpu_csv"
     export WANDB_MODE="$WANDB_MODE"
     export OMP_NUM_THREADS="${OMP_NUM_THREADS:-8}"
     "${PYTHON_CMD[@]}" train.py --config "$CONFIG" --opts "${VARIANT_OPTS[@]}"
     if (( RUN_TEST )); then
       "${PYTHON_CMD[@]}" test.py --config "$CONFIG" --opts "${VARIANT_OPTS[@]}"
+    fi
+    if (( ! KEEP_LAST_MODEL )) && [[ -f "$best_ckpt" && -f "$last_ckpt" ]]; then
+      rm -f "$last_ckpt"
+      log "Removed ${last_ckpt} and kept best checkpoint only."
     fi
   ) >"$log_file" 2>&1 &
 
