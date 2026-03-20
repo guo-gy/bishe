@@ -31,6 +31,13 @@ warnings.filterwarnings("ignore")
 cv2.setNumThreads(0)
 
 
+def resolve_repo_path(path):
+    if not path or os.path.isabs(path):
+        return path
+    repo_root = os.path.dirname(os.path.abspath(__file__))
+    return os.path.normpath(os.path.join(repo_root, path))
+
+
 def get_parser():
     parser = argparse.ArgumentParser(
         description='Pytorch Referring Expression Segmentation')
@@ -48,6 +55,9 @@ def get_parser():
     cfg = config.load_cfg_from_cfg_file(args.config)
     if args.opts is not None:
         cfg = config.merge_cfg_from_list(cfg, args.opts)
+    for key in ['clip_pretrain', 'train_lmdb', 'val_lmdb', 'mask_root']:
+        if hasattr(cfg, key):
+            setattr(cfg, key, resolve_repo_path(getattr(cfg, key)))
     return cfg
 
 
