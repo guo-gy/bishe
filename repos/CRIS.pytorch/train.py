@@ -84,10 +84,12 @@ def main_worker(gpu, args):
 
     # wandb
     if args.rank == 0:
+        wandb_mode = os.environ.get("WANDB_MODE", "online")
+        wandb_project = os.environ.get("WANDB_PROJECT", "CRIS")
         wandb.init(job_type="training",
-                   mode="online",
+                   mode=wandb_mode,
                    config=args,
-                   project="CRIS",
+                   project=wandb_project,
                    name=args.exp_name,
                    tags=[args.dataset, args.clip_pretrain])
     dist.barrier()

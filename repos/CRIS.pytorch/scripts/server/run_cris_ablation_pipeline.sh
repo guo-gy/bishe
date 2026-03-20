@@ -256,6 +256,7 @@ install_environment() {
   "${PIP_CMD[@]}" install --index-url "$TORCH_INDEX_URL" "${torch_pkgs[@]}"
   "${PIP_CMD[@]}" install \
     cython \
+    "numpy<2" \
     wandb \
     lmdb \
     pyarrow \
@@ -264,10 +265,10 @@ install_environment() {
     loguru \
     pycocotools \
     matplotlib \
+    scikit-image \
     tqdm \
-    opencv-python-headless \
-    PyYAML \
-    numpy
+    "opencv-python-headless<4.9" \
+    PyYAML
 }
 
 

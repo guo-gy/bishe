@@ -11,9 +11,15 @@ class CRIS(nn.Module):
     def __init__(self, cfg):
         super().__init__()
         # Vision & Text Encoder
-        clip_model = torch.jit.load(cfg.clip_pretrain,
-                                    map_location="cpu").eval()
-        self.backbone = build_model(clip_model.state_dict(), cfg.word_len).float()
+        try:
+            clip_model = torch.jit.load(cfg.clip_pretrain,
+                                        map_location="cpu").eval()
+            clip_state_dict = clip_model.state_dict()
+        except RuntimeError:
+            clip_state_dict = torch.load(cfg.clip_pretrain, map_location="cpu")
+            if isinstance(clip_state_dict, dict) and 'state_dict' in clip_state_dict:
+                clip_state_dict = clip_state_dict['state_dict']
+        self.backbone = build_model(clip_state_dict, cfg.word_len).float()
         # Multi-Modal FPN
         self.neck = FPN(in_channels=cfg.fpn_in, out_channels=cfg.fpn_out)
         # Decoder
