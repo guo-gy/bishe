@@ -167,12 +167,25 @@ def main_worker(gpu, args):
                                  drop_last=False)
 
     best_IoU = 0.0
+    # initialize from a pretrained checkpoint without optimizer state
+    if args.weight and not args.resume:
+        if os.path.isfile(args.weight):
+            logger.info("=> loading initial weights '{}'".format(args.weight))
+            checkpoint = torch.load(args.weight, map_location='cpu')
+            state_dict = checkpoint['state_dict'] if 'state_dict' in checkpoint else checkpoint
+            load_msg = model.load_state_dict(state_dict, strict=False)
+            logger.info("=> loaded initial weights '{}'".format(args.weight))
+            logger.info("=> missing keys: {}".format(load_msg.missing_keys))
+            logger.info("=> unexpected keys: {}".format(load_msg.unexpected_keys))
+        else:
+            raise ValueError(
+                "=> weight init failed! no checkpoint found at '{}'. Please check args.weight again!"
+                .format(args.weight))
     # resume
     if args.resume:
         if os.path.isfile(args.resume):
             logger.info("=> loading checkpoint '{}'".format(args.resume))
-            checkpoint = torch.load(
-                args.resume, map_location=lambda storage: storage.cuda())
+            checkpoint = torch.load(args.resume, map_location='cpu')
             args.start_epoch = checkpoint['epoch']
             best_IoU = checkpoint["best_iou"]
             model.load_state_dict(checkpoint['state_dict'])

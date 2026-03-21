@@ -128,6 +128,10 @@ def _check_and_coerce_cfg_value_type(replacement, original, key, full_key):
     # The types must match (with some exceptions)
     if replacement_type == original_type:
         return replacement
+    # Allow optional fields declared as None in yaml to be replaced by any
+    # concrete runtime value from the CLI.
+    if original is None:
+        return replacement
 
     # Cast replacement from from_type to to_type if the replacement and original
     # types match from_type and to_type
